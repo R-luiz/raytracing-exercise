@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/23 21:24:56 by rluiz             #+#    #+#             */
-/*   Updated: 2023/12/24 01:04:33 by rluiz            ###   ########.fr       */
+/*   Updated: 2023/12/24 02:24:31 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -93,33 +93,44 @@ void	vec3_print(t_vec3 v, FILE *file)
 		(int)(v.z * 255.99));
 }
 
-int    hit_sphere(t_point3 *center, double radius, t_ray *ray)
+double	hit_sphere(t_point3 *center, double radius, t_ray *ray)
 {
-    t_vec3  oc;
-    double  a;
-    double  b;
-    double  c;
-    double  discriminant;
+	t_vec3	oc;
+	double	a;
+	double	b;
+	double	c;
+	double	discriminant;
 
-    oc = vec3_sub(ray->origin, *center);
-    a = vec3_dot(ray->direction, ray->direction);
-    b = 2.0 * vec3_dot(oc, ray->direction);
-    c = vec3_dot(oc, oc) - radius * radius;
-    discriminant = b * b - 4 * a * c;
-    return (discriminant > 0);
+	oc = vec3_sub(ray->origin, *center);
+	a = vec3_dot(ray->direction, ray->direction);
+	b = 2.0 * vec3_dot(oc, ray->direction);
+	c = vec3_dot(oc, oc) - radius * radius;
+	discriminant = b * b - 4 * a * c;
+	if (discriminant < 0)
+		return (-1);
+	else
+		return (-b - sqrt(discriminant) / (2.0 * a));
 }
 
-t_vec3  ray_color(t_ray *ray)
+t_vec3	ray_color(t_ray *ray)
 {
-    t_vec3	unit_direction;
-    double	t;
+	t_vec3	unit_direction;
+	double	t;
+	double	a;
 
-    if (hit_sphere(&(t_point3){.x = 0, .y = 0, .z = -1}, 0.5, ray))
-        return ((t_vec3){.x = 1, .y = 0, .z = 0});
-    unit_direction = vec3_unit(ray->direction);
-    t = 0.5 * (unit_direction.y + 1.0);
-    return (vec3_add(vec3_scale((t_vec3){.x = 1.0, .y = 1.0, .z = 1.0}, 1.0 - t),
-                     vec3_scale((t_vec3){.x = 0.2, .y = 0.4, .z = 1.0}, t)));
+	t = hit_sphere(&(t_point3){.x = 0.5, .y = 0.2, .z = -1}, 0.5, ray);
+	if (t > 0.0)
+	{
+		unit_direction = vec3_unit(vec3_sub(ray_at(*ray, t), (t_point3){.x = 0,
+				.y = 0, .z = -1}));
+		return (vec3_scale((t_vec3){.x = unit_direction.x + 1.0,
+				.y = unit_direction.y + 1.0, .z = unit_direction.z + 1.0},
+				0.5));
+	}
+	unit_direction = vec3_unit(ray->direction);
+	a = 0.5 * (unit_direction.y + 1.0);
+	return (vec3_add(vec3_scale((t_vec3){.x = 1.0, .y = 1.0, .z = 1.0}, 1.0
+				- a), vec3_scale((t_vec3){.x = 0.2, .y = 0.4, .z = 1.0}, a)));
 }
 
 int	main(void)
@@ -206,8 +217,8 @@ int	main(void)
 						i)), vec3_scale(pixel_delta_v, j));
 			ray_direction = vec3_sub(pixel_center, camera_center);
 			ray = (t_ray){.origin = camera_center, .direction = ray_direction};
-            color = ray_color(&ray);
-            vec3_print(color, file);
+			color = ray_color(&ray);
+			vec3_print(color, file);
 		}
 	}
 	fclose(file);
