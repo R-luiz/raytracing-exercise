@@ -194,7 +194,7 @@ vec3 ray_color(const ray *r, const hittable_list *world) {
 int main() {
     // Image
     const double aspect_ratio = 16.0 / 9.0;
-    const int image_width = 400;
+    const int image_width = 800;
     const int image_height = (int)(image_width / aspect_ratio);
     char name[20];
 
@@ -215,11 +215,12 @@ int main() {
 
     // World
     hittable_list world;
-    Sphere spheres[2];
+    Sphere spheres[3];
     spheres[0] = (Sphere){.center = {0, 0, -1}, .radius = 0.5};
     spheres[1] = (Sphere){.center = {0, -100.5, -1}, .radius = 100};
+    spheres[2] = (Sphere){.center = {1, 0, -1}, .radius = 0.4};
     world.spheres = spheres;
-    world.size = 2;
+    world.size = 3;
 
     // Render and write to file
     for (int j = image_height - 1; j >= 0; --j) {
