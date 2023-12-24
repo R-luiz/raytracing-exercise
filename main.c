@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/23 21:24:56 by rluiz             #+#    #+#             */
-/*   Updated: 2023/12/24 02:24:31 by rluiz            ###   ########.fr       */
+/*   Updated: 2023/12/24 03:44:58 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,26 @@ typedef struct s_ray
 	t_point3	origin;
 	t_vec3		direction;
 }				t_ray;
+
+typedef struct hit_record
+{
+    t_point3	p;
+    t_vec3		normal;
+    double		t;
+}				t_hit_record;
+
+typedef struct hittable
+{
+    void		*object;
+    void		*material;
+    int			(*hit)(void *object, t_ray *ray, double t_min, double t_max, t_hit_record *rec);
+}				t_hittable;
+
+typedef struct sphere
+{
+    t_point3	center;
+    double		radius;
+}				t_sphere;
 
 t_vec3	vec3_add(t_vec3 v, t_vec3 w)
 {
@@ -93,6 +113,33 @@ void	vec3_print(t_vec3 v, FILE *file)
 		(int)(v.z * 255.99));
 }
 
+int sphere_hit(const void *data, const t_ray *r, double t_min, double t_max, t_hit_record *rec) {
+    const t_sphere *sphere = (const t_sphere *)data;
+
+    t_vec3 oc = vec3_sub(r->origin, sphere->center);
+    double a = vec3_length_squared(r->direction);
+    double half_b = vec3_dot(oc, r->direction);
+    double c = vec3_length_squared(oc) - sphere->radius * sphere->radius;
+    double discriminant = half_b * half_b - a * c;
+
+    if (discriminant < 0) return 0;
+    double sqrtd = sqrt(discriminant);
+
+    // Find the nearest root that lies in the acceptable range
+    double root = (-half_b - sqrtd) / a;
+    if (root < t_min || root > t_max) {
+        root = (-half_b + sqrtd) / a;
+        if (root < t_min || root > t_max)
+            return 0;
+    }
+
+    rec->t = root;
+    rec->p = ray_at(*r, rec->t);
+    rec->normal = vec3_scale(vec3_sub(rec->p, sphere->center), 1.0 / sphere->radius);
+
+    return 1;
+}
+
 double	hit_sphere(t_point3 *center, double radius, t_ray *ray)
 {
 	t_vec3	oc;
@@ -112,13 +159,15 @@ double	hit_sphere(t_point3 *center, double radius, t_ray *ray)
 		return (-b - sqrt(discriminant) / (2.0 * a));
 }
 
+
+
 t_vec3	ray_color(t_ray *ray)
 {
 	t_vec3	unit_direction;
 	double	t;
 	double	a;
 
-	t = hit_sphere(&(t_point3){.x = 0.5, .y = 0.2, .z = -1}, 0.5, ray);
+	t = hit_sphere(&(t_point3){.x = 0.2, .y = 0.15, .z = -1}, 0.5, ray);
 	if (t > 0.0)
 	{
 		unit_direction = vec3_unit(vec3_sub(ray_at(*ray, t), (t_point3){.x = 0,
@@ -129,8 +178,8 @@ t_vec3	ray_color(t_ray *ray)
 	}
 	unit_direction = vec3_unit(ray->direction);
 	a = 0.5 * (unit_direction.y + 1.0);
-	return (vec3_add(vec3_scale((t_vec3){.x = 1.0, .y = 1.0, .z = 1.0}, 1.0
-				- a), vec3_scale((t_vec3){.x = 0.2, .y = 0.4, .z = 1.0}, a)));
+	return (vec3_add(vec3_scale((t_vec3){.x = 0.0, .y = 0.9, .z = 0.7}, 1.0
+				- a), vec3_scale((t_vec3){.x = 0.4, .y = 0.4, .z = 1.0}, a)));
 }
 
 int	main(void)
@@ -139,14 +188,7 @@ int	main(void)
 	int			image_height;
 	char		*name;
 	FILE		*file;
-	t_vec3		red;
-	t_vec3		green;
-	t_vec3		blue;
-	t_vec3		white;
-	t_vec3		black;
-	t_vec3		yellow;
-	t_vec3		magenta;
-	t_vec3		cyan;
+
 	t_vec3		color;
 	double		r;
 	double		g;
@@ -165,15 +207,7 @@ int	main(void)
 	t_point3	pixel_center;
 	t_vec3		ray_direction;
 	t_ray		ray;
-
-	red = (t_vec3){.x = 1, .y = 0, .z = 0};
-	green = (t_vec3){.x = 0, .y = 1, .z = 0};
-	blue = (t_vec3){.x = 0, .y = 0, .z = 1};
-	white = (t_vec3){.x = 1, .y = 1, .z = 1};
-	black = (t_vec3){.x = 0, .y = 0, .z = 0};
-	yellow = (t_vec3){.x = 1, .y = 1, .z = 0};
-	magenta = (t_vec3){.x = 1, .y = 0, .z = 1};
-	cyan = (t_vec3){.x = 0, .y = 1, .z = 1};
+    
 	// Image
 	image_width = 400;
 	aspect_ratio = 16.0 / 9.0;
@@ -224,17 +258,3 @@ int	main(void)
 	fclose(file);
 	return (0);
 }
-/*
-for (int j = 0; j < image_height; ++j)
-{
-for (int i = 0; i < image_width; ++i)
-{
-	r = (double)i / (image_width - 1);
-	g = (double)j / (image_height - 1);
-	b = 0.25;
-	color = vec3_add(vec3_add(vec3_scale(red, 1),
-			vec3_scale(green, g)),
-		vec3_scale(blue, r));
-	vec3_print(color, file);
-}
-}*/
