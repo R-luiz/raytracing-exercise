@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/23 21:24:56 by rluiz             #+#    #+#             */
-/*   Updated: 2023/12/24 03:44:58 by rluiz            ###   ########.fr       */
+/*   Updated: 2023/12/24 03:57:54 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,33 +113,6 @@ void	vec3_print(t_vec3 v, FILE *file)
 		(int)(v.z * 255.99));
 }
 
-int sphere_hit(const void *data, const t_ray *r, double t_min, double t_max, t_hit_record *rec) {
-    const t_sphere *sphere = (const t_sphere *)data;
-
-    t_vec3 oc = vec3_sub(r->origin, sphere->center);
-    double a = vec3_length_squared(r->direction);
-    double half_b = vec3_dot(oc, r->direction);
-    double c = vec3_length_squared(oc) - sphere->radius * sphere->radius;
-    double discriminant = half_b * half_b - a * c;
-
-    if (discriminant < 0) return 0;
-    double sqrtd = sqrt(discriminant);
-
-    // Find the nearest root that lies in the acceptable range
-    double root = (-half_b - sqrtd) / a;
-    if (root < t_min || root > t_max) {
-        root = (-half_b + sqrtd) / a;
-        if (root < t_min || root > t_max)
-            return 0;
-    }
-
-    rec->t = root;
-    rec->p = ray_at(*r, rec->t);
-    rec->normal = vec3_scale(vec3_sub(rec->p, sphere->center), 1.0 / sphere->radius);
-
-    return 1;
-}
-
 double	hit_sphere(t_point3 *center, double radius, t_ray *ray)
 {
 	t_vec3	oc;
@@ -188,7 +161,14 @@ int	main(void)
 	int			image_height;
 	char		*name;
 	FILE		*file;
-
+	t_vec3		red;
+	t_vec3		green;
+	t_vec3		blue;
+	t_vec3		white;
+	t_vec3		black;
+	t_vec3		yellow;
+	t_vec3		magenta;
+	t_vec3		cyan;
 	t_vec3		color;
 	double		r;
 	double		g;
@@ -207,7 +187,15 @@ int	main(void)
 	t_point3	pixel_center;
 	t_vec3		ray_direction;
 	t_ray		ray;
-    
+
+	red = (t_vec3){.x = 1, .y = 0, .z = 0};
+	green = (t_vec3){.x = 0, .y = 1, .z = 0};
+	blue = (t_vec3){.x = 0, .y = 0, .z = 1};
+	white = (t_vec3){.x = 1, .y = 1, .z = 1};
+	black = (t_vec3){.x = 0, .y = 0, .z = 0};
+	yellow = (t_vec3){.x = 1, .y = 1, .z = 0};
+	magenta = (t_vec3){.x = 1, .y = 0, .z = 1};
+	cyan = (t_vec3){.x = 0, .y = 1, .z = 1};
 	// Image
 	image_width = 400;
 	aspect_ratio = 16.0 / 9.0;
@@ -258,3 +246,17 @@ int	main(void)
 	fclose(file);
 	return (0);
 }
+/*
+for (int j = 0; j < image_height; ++j)
+{
+for (int i = 0; i < image_width; ++i)
+{
+	r = (double)i / (image_width - 1);
+	g = (double)j / (image_height - 1);
+	b = 0.25;
+	color = vec3_add(vec3_add(vec3_scale(red, 1),
+			vec3_scale(green, g)),
+		vec3_scale(blue, r));
+	vec3_print(color, file);
+}
+}*/
